@@ -372,53 +372,236 @@ class StableDiffusionManager:
         cfg_scale = params.get('cfg_scale', 7.5)
         seed = params.get('seed', -1)
         sampler = params.get('sampler', 'euler')
+        num_images = params.get('num_images', 1)
+        loras = params.get('loras', [])
         
-        # Set seed
-        if seed >= 0:
-            torch.manual_seed(seed)
+        logger.info(f"🎨 Txt2Img: {prompt[:50]}... ({width}x{height}, {steps} steps)")
+        if loras:
+            logger.info(f"📦 LoRAs: {[l.get('name', '') for l in loras]}")
         
-        # Mock implementation - replace with actual generation
-        logger.info(f"Generating txt2img: {prompt[:50]}...")
+        try:
+            # Load LoRAs if provided
+            for lora in loras:
+                lora_name = lora.get('name', '')
+                lora_weight = lora.get('weight', 1.0)
+                lora_path = Path('./models/loras') / lora_name
+                
+                if lora_path.exists():
+                    logger.info(f"Loading LoRA: {lora_name} (weight={lora_weight})")
+                    pipeline.load_lora_weights(str(lora_path))
+                    if hasattr(pipeline, 'set_lora_device'):
+                        pipeline.set_lora_device(state.device)
+                    if hasattr(pipeline, 'fuse_lora'):
+                        pipeline.fuse_lora(lora_scale=lora_weight)
+            
+            # Set seed
+            generator = None
+            if seed >= 0:
+                generator = torch.Generator(device=state.device).manual_seed(seed)
+            
+            # Run generation
+            output = pipeline(
+                prompt=prompt,
+                negative_prompt=negative_prompt,
+                height=height,
+                width=width,
+                num_inference_steps=steps,
+                guidance_scale=cfg_scale,
+                generator=generator,
+                num_images_per_prompt=num_images
+            )
+            
+            logger.info(f"✅ Generated {len(output.images)} image(s)")
+            return output.images
         
-        # In real implementation:
-        # output = pipeline(
-        #     prompt=prompt,
-        #     negative_prompt=negative_prompt,
-        #     height=height,
-        #     width=width,
-        #     num_inference_steps=steps,
-        #     guidance_scale=cfg_scale,
-        # )
-        # return output.images
-        
-        # For testing, create placeholder image
-        images = [Image.new('RGB', (width, height), color=(73, 109, 137))]
-        return images
+        except Exception as e:
+            logger.error(f"❌ Txt2Img error: {e}")
+            raise
     
     async def _img2img(self, pipeline, params: Dict) -> List[Image.Image]:
         """Image to image generation"""
-        # Implementation similar to txt2img
-        logger.info("Generating img2img...")
-        width = params.get('width', 512)
-        height = params.get('height', 512)
-        images = [Image.new('RGB', (width, height), color=(100, 120, 140))]
-        return images
+        from diffusers import StableDiffusionImg2ImgPipeline
+        
+        prompt = params['prompt']
+        negative_prompt = params.get('negative_prompt', '')
+        strength = params.get('strength', 0.75)
+        steps = params.get('steps', 20)
+        cfg_scale = params.get('cfg_scale', 7.5)
+        seed = params.get('seed', -1)
+        
+        # Decode input image
+        image_data = base64.b64decode(params.get('image', ''))
+        image = Image.open(io.BytesIO(image_data))
+        
+        logger.info(f"🖼️ Img2Img: {prompt[:50]}... (strength={strength})")
+        
+        try:
+            # Load img2img pipeline if not already loaded
+            if not isinstance(pipeline, StableDiffusionImg2ImgPipeline):
+                model_name = self.current_model
+                logger.info("Loading img2img pipeline...")
+                pipeline = StableDiffusionImg2ImgPipeline.from_pretrained(
+                    model_name,
+                    torch_dtype=torch.float16 if state.model_precision == "fp16" else torch.float32,
+                    use_safetensors=True
+                ).to(state.device)
+            
+            generator = None
+            if seed >= 0:
+                generator = torch.Generator(device=state.device).manual_seed(seed)
+            
+            output = pipeline(
+                prompt=prompt,
+                negative_prompt=negative_prompt,
+                image=image,
+                strength=strength,
+                num_inference_steps=steps,
+                guidance_scale=cfg_scale,
+                generator=generator
+            )
+            
+            logger.info(f"✅ Img2Img generated successfully")
+            return output.images
+        
+        except Exception as e:
+            logger.error(f"❌ Img2Img error: {e}")
+            raise
     
     async def _inpaint(self, pipeline, params: Dict) -> List[Image.Image]:
         """Inpainting generation"""
-        logger.info("Generating inpaint...")
-        width = params.get('width', 512)
-        height = params.get('height', 512)
-        images = [Image.new('RGB', (width, height), color=(110, 130, 150))]
-        return images
+        from diffusers import StableDiffusionInpaintPipeline
+        
+        prompt = params['prompt']
+        negative_prompt = params.get('negative_prompt', '')
+        strength = params.get('strength', 0.8)
+        steps = params.get('steps', 20)
+        cfg_scale = params.get('cfg_scale', 7.5)
+        seed = params.get('seed', -1)
+        
+        # Decode images
+        image_data = base64.b64decode(params.get('image', ''))
+        image = Image.open(io.BytesIO(image_data))
+        
+        mask_data = base64.b64decode(params.get('mask', ''))
+        mask = Image.open(io.BytesIO(mask_data))
+        
+        logger.info(f"🎭 Inpaint: {prompt[:50]}... (strength={strength})")
+        
+        try:
+            # Load inpaint pipeline if not already loaded
+            if not isinstance(pipeline, StableDiffusionInpaintPipeline):
+                model_name = self.current_model
+                logger.info("Loading inpaint pipeline...")
+                pipeline = StableDiffusionInpaintPipeline.from_pretrained(
+                    model_name,
+                    torch_dtype=torch.float16 if state.model_precision == "fp16" else torch.float32,
+                    use_safetensors=True
+                ).to(state.device)
+            
+            generator = None
+            if seed >= 0:
+                generator = torch.Generator(device=state.device).manual_seed(seed)
+            
+            output = pipeline(
+                prompt=prompt,
+                negative_prompt=negative_prompt,
+                image=image,
+                mask_image=mask,
+                strength=strength,
+                num_inference_steps=steps,
+                guidance_scale=cfg_scale,
+                generator=generator
+            )
+            
+            logger.info(f"✅ Inpaint generated successfully")
+            return output.images
+        
+        except Exception as e:
+            logger.error(f"❌ Inpaint error: {e}")
+            raise
     
     async def _controlnet(self, pipeline, params: Dict) -> List[Image.Image]:
         """ControlNet generation"""
-        logger.info("Generating with ControlNet...")
+        from diffusers import ControlNetModel, StableDiffusionControlNetPipeline
+        import cv2
+        
+        prompt = params['prompt']
+        negative_prompt = params.get('negative_prompt', '')
+        steps = params.get('steps', 20)
+        cfg_scale = params.get('cfg_scale', 7.5)
+        seed = params.get('seed', -1)
         width = params.get('width', 512)
         height = params.get('height', 512)
-        images = [Image.new('RGB', (width, height), color=(120, 140, 160))]
-        return images
+        
+        controlnet_type = params.get('controlnet_type', 'canny')
+        controlnet_weight = params.get('controlnet_weight', 1.0)
+        
+        # Decode input image
+        image_data = base64.b64decode(params.get('image', ''))
+        image = Image.open(io.BytesIO(image_data))
+        image = image.resize((width, height))
+        
+        logger.info(f"🎮 ControlNet {controlnet_type}: {prompt[:50]}...")
+        
+        try:
+            # Map controlnet types to models
+            controlnet_models = {
+                'canny': 'lllyasviel/control_v11p_sd15_canny',
+                'openpose': 'lllyasviel/control_v11p_sd15_openpose',
+                'depth': 'lllyasviel/control_v11p_sd15_depth',
+                'mlsd': 'lllyasviel/control_v11p_sd15_mlsd',
+                'lineart': 'lllyasviel/control_v11p_sd15_lineart',
+                'normalbae': 'lllyasviel/control_v11p_sd15_normalbae',
+                'tile': 'lllyasviel/control_v11f1p_sd15_tile'
+            }
+            
+            cn_model = controlnet_models.get(controlnet_type, 'lllyasviel/control_v11p_sd15_canny')
+            
+            logger.info(f"Loading ControlNet: {cn_model}")
+            controlnet = ControlNetModel.from_pretrained(
+                cn_model,
+                torch_dtype=torch.float16 if state.model_precision == "fp16" else torch.float32,
+                use_safetensors=True
+            )
+            
+            cn_pipeline = StableDiffusionControlNetPipeline.from_pretrained(
+                self.current_model,
+                controlnet=controlnet,
+                torch_dtype=torch.float16 if state.model_precision == "fp16" else torch.float32,
+                use_safetensors=True
+            ).to(state.device)
+            
+            # Preprocess image based on type
+            if controlnet_type == 'canny':
+                low = params.get('canny_low', 100)
+                high = params.get('canny_high', 200)
+                image_cv = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+                edges = cv2.Canny(image_cv, low, high)
+                edges = cv2.cvtColor(edges, cv2.COLOR_GRAY2BGR)
+                control_image = Image.fromarray(cv2.cvtColor(edges, cv2.COLOR_BGR2RGB))
+            else:
+                control_image = image  # Assume preprocessed
+            
+            generator = None
+            if seed >= 0:
+                generator = torch.Generator(device=state.device).manual_seed(seed)
+            
+            output = cn_pipeline(
+                prompt=prompt,
+                negative_prompt=negative_prompt,
+                image=control_image,
+                controlnet_conditioning_scale=controlnet_weight,
+                num_inference_steps=steps,
+                guidance_scale=cfg_scale,
+                generator=generator
+            )
+            
+            logger.info(f"✅ ControlNet generated successfully")
+            return output.images
+        
+        except Exception as e:
+            logger.error(f"❌ ControlNet error: {e}")
+            raise
 
 sd_manager = StableDiffusionManager()
 
@@ -1078,14 +1261,44 @@ def list_models():
 async def initialize_server():
     """Initialize server components"""
     try:
-        logger.info("Initializing Stable Diffusion server...")
+        logger.info("🚀 Initializing Stable Diffusion server...")
         
-        # Initialize Google Drive
+        # Check if in Colab and mount Google Drive
+        if IN_COLAB:
+            try:
+                from google.colab import drive
+                logger.info("📁 Mounting Google Drive...")
+                drive.mount('/content/drive')
+                
+                # Create project directory on Drive
+                project_path = Path('/content/drive/My Drive/StableDiffusion_Server')
+                project_path.mkdir(exist_ok=True)
+                
+                # Create subdirectories
+                (project_path / 'models' / 'checkpoints').mkdir(parents=True, exist_ok=True)
+                (project_path / 'models' / 'loras').mkdir(parents=True, exist_ok=True)
+                (project_path / 'outputs').mkdir(parents=True, exist_ok=True)
+                
+                # Symlink to local directories
+                local_models = Path('./models')
+                if not local_models.exists():
+                    os.symlink(str(project_path / 'models'), str(local_models))
+                    logger.info(f"✅ Linked models to Drive")
+                
+                local_outputs = Path('./outputs')
+                if not local_outputs.exists():
+                    os.symlink(str(project_path / 'outputs'), str(local_outputs))
+                    logger.info(f"✅ Linked outputs to Drive")
+                
+            except Exception as e:
+                logger.warning(f"⚠️ Google Drive mount failed: {e}")
+        
+        # Initialize Google Drive API
         await gdrive_manager.initialize()
         
-        logger.info("Server initialization complete")
+        logger.info("✅ Server initialization complete")
     except Exception as e:
-        logger.error(f"Server initialization failed: {e}")
+        logger.error(f"❌ Server initialization failed: {e}")
 
 @app.before_request
 def before_request():

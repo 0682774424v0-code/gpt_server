@@ -1,0 +1,117 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+secrets.txt
+
+# Large model files (DO NOT COMMIT)
+*.safetensors
+*.pt
+*.pth
+*.ckpt
+models/
+checkpoints/
+loras/
+vaes/
+
+# Generated outputs
+outputs/
+generated_images/
+cache/
+*.log
+
+# Node modules (if using npm in future)
+node_modules/
+package-lock.json
+yarn.lock
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+~$*.xlsx
+~$*.docx
+
+# OS
+.DS_Store
+Thumbs.db
+.directory
+
+# Test outputs
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb_checkpoints
+
+# Google Drive local
+My Drive/
+drive.json
+
+# Colab specific
+sample_data/
+
+# GitHub Pages
+_site/
+.jekyll-cache/
+
+# Build artifacts
+dist/
+build/
+
+# Optional: OS-specific
+.AppleDouble
+.LSOverride
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.AppleDB
+.AppleDesktop
+
+# Don't ignore important documentation
+!README.md
+!QUICKSTART.md
+!GITHUB_GUIDE.md
+
+# Keep example files
+!.env.example
+!requirements.txt

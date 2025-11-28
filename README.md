@@ -1,5 +1,11 @@
 # Stable Diffusion WebUI - Complete Documentation
 
+[![GitHub](https://img.shields.io/badge/GitHub-Repository-blue?logo=github)](https://github.com/0682774424v0-code/gpt_server)
+[![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-Live%20Demo-green)](https://0682774424v0-code.github.io/gpt_server/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.9+](https://img.shields.io/badge/Python-3.9%2B-blue)](https://www.python.org/downloads/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-red?logo=pytorch)](https://pytorch.org/)
+
 ## 📋 Огляд
 
 Цей проект являє собою повнофункціональний веб-додаток для Stable Diffusion з підтримкою:
@@ -505,6 +511,12 @@ python colab_server.py
 
 Велькамі PR з покращеннями!
 
+Для деталей див. [GITHUB_GUIDE.md](GITHUB_GUIDE.md) з інструкціями:
+- Як працювати з Git
+- Як створювати branches
+- Як писати good commit messages
+- Як відкривати Pull Requests
+
 ## 📄 Ліцензія
 
 MIT License - див. LICENSE файл
@@ -514,6 +526,25 @@ MIT License - див. LICENSE файл
 創作者: [Ваше Ім'я]
 GitHub: [Ваш GitHub]
 Email: [Ваш Email]
+
+## 🔗 Важливі Посилання
+
+### GitHub
+- **Repository**: https://github.com/0682774424v0-code/gpt_server
+- **Issues**: https://github.com/0682774424v0-code/gpt_server/issues
+- **Discussions**: https://github.com/0682774424v0-code/gpt_server/discussions
+- **Releases**: https://github.com/0682774424v0-code/gpt_server/releases
+
+### Документація
+- **Quick Start**: [QUICKSTART.md](QUICKSTART.md)
+- **GitHub Guide**: [GITHUB_GUIDE.md](GITHUB_GUIDE.md)
+- **API Guide**: [API_KEYS_GUIDE.md](API_KEYS_GUIDE.md)
+- **WebSocket URL**: [WSS_URL_GUIDE.md](WSS_URL_GUIDE.md)
+
+### Deployment
+- **GitHub Pages**: https://0682774424v0-code.github.io/gpt_server/
+- **Colab Notebook**: [colab_server.ipynb](colab_server.ipynb)
+- **Docker Support**: [Dockerfile](Dockerfile)
 
 ---
 
@@ -532,6 +563,8 @@ Email: [Ваш Email]
 
 ---
 
-**Остання оновлення:** Листопад 28, 2024
+**Made with ❤️ for the AI art community**
 
-Для більш інформації і проблеми, відвідайте [Issues](https://github.com/your-repo/issues) сторінку.
+**Остання оновлення:** Грудень 2024
+
+Для більш інформації і проблеми, відвідайте [Issues](https://github.com/0682774424v0-code/gpt_server/issues) сторінку.
