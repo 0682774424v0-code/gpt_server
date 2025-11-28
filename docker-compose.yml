@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  # Stable Diffusion Backend
+  sd-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - FLASK_ENV=production
+      - DEVICE=cuda
+      - MODEL_PRECISION=fp16
+    volumes:
+      - ./models:/app/models
+      - ./outputs:/app/outputs
+      - ./cache:/app/cache
+    gpus:
+      - driver: nvidia
+        count: 1
+        capabilities: [compute, utility]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Optional: Redis for caching
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+
+  # Optional: PostgreSQL for history
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: stable_diffusion
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+  postgres-data:
+
+networks:
+  default:
+    name: stable-diffusion-network

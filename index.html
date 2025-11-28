@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stable Diffusion WebUI</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <h1 class="app-title">
+                        <i class="fas fa-wand-magic-sparkles"></i>
+                        Stable Diffusion WebUI
+                    </h1>
+                    <span class="connection-status">
+                        <span class="status-indicator" id="connectionStatus"></span>
+                        <span id="statusText">Disconnected</span>
+                    </span>
+                </div>
+                <div class="header-controls">
+                    <button id="themeToggle" class="icon-btn" title="Toggle Theme">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <button id="helpBtn" class="icon-btn" title="Help">
+                        <i class="fas fa-circle-question"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Tab Navigation -->
+            <nav class="tab-navigation">
+                <button class="tab-btn active" data-tab="generation" title="Main generation tab">
+                    <i class="fas fa-wand-magic-sparkles"></i>
+                    <span>Generation</span>
+                </button>
+                <button class="tab-btn" data-tab="inpaint" title="Inpaint with canvas editor">
+                    <i class="fas fa-paintbrush"></i>
+                    <span>Inpaint</span>
+                </button>
+                <button class="tab-btn" data-tab="controlnet" title="ControlNet features">
+                    <i class="fas fa-network-wired"></i>
+                    <span>ControlNet</span>
+                </button>
+                <button class="tab-btn" data-tab="enhancement" title="Image enhancement">
+                    <i class="fas fa-sparkles"></i>
+                    <span>Enhancement</span>
+                </button>
+                <button class="tab-btn" data-tab="gallery" title="View generations">
+                    <i class="fas fa-images"></i>
+                    <span>Gallery</span>
+                </button>
+                <button class="tab-btn" data-tab="settings" title="Settings">
+                    <i class="fas fa-cogs"></i>
+                    <span>Settings</span>
+                </button>
+            </nav>
+
+            <!-- Tab Contents -->
+            <div class="tabs-container">
+                <!-- GENERATION TAB -->
+                <div class="tab-content active" id="generation">
+                    <div class="generation-grid">
+                        <!-- Left Panel: Prompt & Basic Settings -->
+                        <div class="gen-left-panel">
+                            <div class="form-section">
+                                <h3>Prompt</h3>
+                                <textarea id="promptInput" class="prompt-textarea" placeholder="Describe what you want to generate..." rows="4"></textarea>
+                                <button id="enhancePromptBtn" class="btn-secondary" title="Enhance prompt with AI">
+                                    <i class="fas fa-wand-magic-sparkles"></i>
+                                    Enhance Prompt
+                                </button>
+                            </div>
+
+                            <div class="form-section">
+                                <h3>Negative Prompt</h3>
+                                <textarea id="negativePromptInput" class="prompt-textarea" placeholder="What to avoid..." rows="3"></textarea>
+                            </div>
+
+                            <!-- Model Selection -->
+                            <div class="form-section">
+                                <h3>Model</h3>
+                                <select id="modelSelect" class="form-control">
+                                    <option value="runwayml/stable-diffusion-v1-5">SD 1.5</option>
+                                    <option value="stabilityai/stable-diffusion-2-1">SD 2.1</option>
+                                    <option value="stabilityai/stable-diffusion-xl-base-1.0">SDXL</option>
+                                    <option value="black-forest-labs/flux-1-dev">Flux</option>
+                                </select>
+                            </div>
+
+                            <!-- Task Selection -->
+                            <div class="form-section">
+                                <h3>Task</h3>
+                                <select id="taskSelect" class="form-control">
+                                    <option value="txt2img">Text to Image</option>
+                                    <option value="img2img">Image to Image</option>
+                                    <option value="inpaint">Inpaint</option>
+                                </select>
+                            </div>
+
+                            <!-- Dimensions -->
+                            <div class="form-section">
+                                <h3>Dimensions
+                                    <span class="info-tooltip" title="Image width and height">?</span>
+                                </h3>
+                                <div class="dimension-presets">
+                                    <button class="preset-btn" data-width="512" data-height="512">512x512</button>
+                                    <button class="preset-btn" data-width="768" data-height="768">768x768</button>
+                                    <button class="preset-btn" data-width="1024" data-height="1024">1024x1024</button>
+                                </div>
+                                <div class="input-row">
+                                    <div>
+                                        <label>Width</label>
+                                        <input type="number" id="widthInput" min="64" max="2048" step="64" value="512" class="form-control">
+                                    </div>
+                                    <div>
+                                        <label>Height</label>
+                                        <input type="number" id="heightInput" min="64" max="2048" step="64" value="512" class="form-control">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Generation Parameters -->
+                            <div class="form-section">
+                                <h3>Generation Settings</h3>
+                                <div class="param-group">
+                                    <label>Steps <span id="stepsValue">20</span></label>
+                                    <input type="range" id="stepsSlider" min="1" max="100" value="20" class="slider">
+                                </div>
+                                <div class="param-group">
+                                    <label>CFG Scale <span id="cfgValue">7.5</span></label>
+                                    <input type="range" id="cfgSlider" min="1" max="20" step="0.5" value="7.5" class="slider">
+                                </div>
+                                <div class="input-row">
+                                    <div>
+                                        <label>Sampler</label>
+                                        <select id="samplerSelect" class="form-control">
+                                            <option value="euler">Euler</option>
+                                            <option value="euler_ancestral">Euler Ancestral</option>
+                                            <option value="dpm">DPM++</option>
+                                            <option value="lms">LMS</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label>Scheduler</label>
+                                        <select id="schedulerSelect" class="form-control">
+                                            <option value="normal">Normal</option>
+                                            <option value="karras">Karras</option>
+                                            <option value="exponential">Exponential</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Seed -->
+                            <div class="form-section">
+                                <div class="input-row">
+                                    <div style="flex: 1;">
+                                        <label>Seed</label>
+                                        <input type="number" id="seedInput" min="-1" value="-1" class="form-control">
+                                    </div>
+                                    <div style="align-self: flex-end;">
+                                        <button id="randomSeedBtn" class="btn-secondary" title="Generate random seed">
+                                            <i class="fas fa-dice"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Panel: LoRA, Advanced Settings & Preview -->
+                        <div class="gen-right-panel">
+                            <!-- LoRA Selection -->
+                            <div class="form-section">
+                                <h3>LoRA Models <span class="badge">Up to 7</span></h3>
+                                <div id="loraContainer" class="lora-container">
+                                    <!-- LoRA slots will be added here -->
+                                </div>
+                                <button id="addLoraBtn" class="btn-secondary">
+                                    <i class="fas fa-plus"></i>
+                                    Add LoRA
+                                </button>
+                            </div>
+
+                            <!-- Advanced Settings Collapsed -->
+                            <details class="form-section">
+                                <summary>Advanced Options</summary>
+                                <div class="param-group">
+                                    <label>Clip Skip <span id="clipSkipValue">0</span></label>
+                                    <input type="range" id="clipSkipSlider" min="0" max="3" value="0" class="slider">
+                                </div>
+                                <div class="param-group">
+                                    <label>FreeU Beta <span id="freeuValue">0</span></label>
+                                    <input type="range" id="freeuSlider" min="0" max="1" step="0.01" value="0" class="slider">
+                                </div>
+                                <div class="param-group">
+                                    <label>PAG Scale <span id="pagValue">0</span></label>
+                                    <input type="range" id="pagSlider" min="0" max="10" step="0.1" value="0" class="slider">
+                                </div>
+                            </details>
+
+                            <!-- Image Upload -->
+                            <div class="form-section">
+                                <h3>Image Upload</h3>
+                                <div class="dropzone" id="dropzone">
+                                    <i class="fas fa-cloud-arrow-up"></i>
+                                    <p>Drag & drop image here or click to upload</p>
+                                    <input type="file" id="imageUpload" accept="image/*" hidden>
+                                </div>
+                                <div id="uploadPreview" class="upload-preview" style="display: none;">
+                                    <img id="previewImage" src="" alt="Preview">
+                                    <button id="clearUploadBtn" class="btn-secondary">Clear</button>
+                                </div>
+                            </div>
+
+                            <!-- Preview Area -->
+                            <div class="form-section">
+                                <h3>Generation Preview</h3>
+                                <div class="preview-container">
+                                    <div id="generationPreview" class="preview-area">
+                                        <div class="preview-placeholder">
+                                            <i class="fas fa-image"></i>
+                                            <p>Generated images will appear here</p>
+                                        </div>
+                                    </div>
+                                    <div id="progressBar" class="progress-bar" style="display: none;">
+                                        <div class="progress-fill" id="progressFill"></div>
+                                        <span class="progress-text" id="progressText">0%</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Generate Button -->
+                            <button id="generateBtn" class="btn-primary btn-large">
+                                <i class="fas fa-wand-magic-sparkles"></i>
+                                Generate
+                            </button>
+                            <button id="cancelGenerateBtn" class="btn-danger" style="display: none;">
+                                <i class="fas fa-stop"></i>
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- INPAINT TAB -->
+                <div class="tab-content" id="inpaint">
+                    <div class="inpaint-container">
+                        <div class="inpaint-panel">
+                            <h2>Inpaint Editor</h2>
+                            <div class="canvas-controls">
+                                <label>Brush Size: <span id="brushSizeValue">20</span>px</label>
+                                <input type="range" id="brushSizeSlider" min="1" max="100" value="20" class="slider">
+                                
+                                <div class="button-group">
+                                    <button id="brushModeBtn" class="btn-secondary active">
+                                        <i class="fas fa-paintbrush"></i>
+                                        Brush
+                                    </button>
+                                    <button id="eraserModeBtn" class="btn-secondary">
+                                        <i class="fas fa-eraser"></i>
+                                        Eraser
+                                    </button>
+                                    <button id="clearCanvasBtn" class="btn-secondary">
+                                        <i class="fas fa-trash"></i>
+                                        Clear
+                                    </button>
+                                </div>
+                            </div>
+                            <canvas id="inpaintCanvas" width="512" height="512" class="inpaint-canvas"></canvas>
+                            <div class="param-group">
+                                <label>Inpaint Strength: <span id="inpaintStrengthValue">0.8</span></label>
+                                <input type="range" id="inpaintStrengthSlider" min="0.1" max="1" step="0.05" value="0.8" class="slider">
+                            </div>
+                        </div>
+                        <div class="inpaint-options">
+                            <div class="form-section">
+                                <h3>Inpaint Settings</h3>
+                                <textarea id="inpaintPrompt" class="prompt-textarea" placeholder="Describe the inpainted area..." rows="4"></textarea>
+                                <textarea id="inpaintNegative" class="prompt-textarea" placeholder="What to avoid..." rows="3"></textarea>
+                                <button id="inpaintGenerateBtn" class="btn-primary btn-large">
+                                    <i class="fas fa-wand-magic-sparkles"></i>
+                                    Generate Inpaint
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CONTROLNET TAB -->
+                <div class="tab-content" id="controlnet">
+                    <div class="controlnet-container">
+                        <div class="form-section">
+                            <h3>ControlNet Configuration</h3>
+                            <select id="controlnetTypeSelect" class="form-control">
+                                <option value="">Select ControlNet Type</option>
+                                <option value="canny">Canny Edge Detection</option>
+                                <option value="openpose">OpenPose Keypoints</option>
+                                <option value="depth">Depth Map</option>
+                                <option value="mlsd">M-LSD Lines</option>
+                                <option value="lineart">Line Art</option>
+                                <option value="normalbae">Normal Map</option>
+                                <option value="tile">Tile</option>
+                            </select>
+                        </div>
+
+                        <div class="form-section">
+                            <h3>Preprocessor Settings</h3>
+                            <div class="param-group">
+                                <label>Resolution: <span id="preproResValue">512</span></label>
+                                <input type="range" id="preproResSlider" min="64" max="1024" step="64" value="512" class="slider">
+                            </div>
+                            <div class="param-group">
+                                <label>Control Weight: <span id="controlWeightValue">1.0</span></label>
+                                <input type="range" id="controlWeightSlider" min="0" max="2" step="0.1" value="1.0" class="slider">
+                            </div>
+                            <div class="param-group">
+                                <label>Start %: <span id="controlStartValue">0</span>%</label>
+                                <input type="range" id="controlStartSlider" min="0" max="100" step="5" value="0" class="slider">
+                            </div>
+                            <div class="param-group">
+                                <label>Stop %: <span id="controlStopValue">100</span>%</label>
+                                <input type="range" id="controlStopSlider" min="0" max="100" step="5" value="100" class="slider">
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h3>Canny Parameters</h3>
+                            <div class="param-group">
+                                <label>Low Threshold: <span id="cannyLowValue">100</span></label>
+                                <input type="range" id="cannyLowSlider" min="1" max="255" value="100" class="slider">
+                            </div>
+                            <div class="param-group">
+                                <label>High Threshold: <span id="cannyHighValue">200</span></label>
+                                <input type="range" id="cannyHighSlider" min="1" max="255" value="200" class="slider">
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <button id="generateControlnetBtn" class="btn-primary btn-large">
+                                <i class="fas fa-network-wired"></i>
+                                Generate with ControlNet
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ENHANCEMENT TAB -->
+                <div class="tab-content" id="enhancement">
+                    <div class="enhancement-container">
+                        <div class="form-section">
+                            <h3>Adetailer (Face/Detail Enhancement)</h3>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="enableAdetailerFace">
+                                <span>Enhance Faces</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="enableAdetailerPerson">
+                                <span>Enhance Person</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="enableAdetailerHand">
+                                <span>Enhance Hands</span>
+                            </label>
+                        </div>
+
+                        <div class="form-section">
+                            <h3>Face Restoration</h3>
+                            <select id="faceRestorationSelect" class="form-control">
+                                <option value="none">None</option>
+                                <option value="codeformer">CodeFormer</option>
+                                <option value="gfpgan">GFPGAN</option>
+                            </select>
+                            <div class="param-group">
+                                <label>Restoration Strength: <span id="faceRestoreValue">1.0</span></label>
+                                <input type="range" id="faceRestoreSlider" min="0" max="1" step="0.05" value="1.0" class="slider">
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h3>Upscaling</h3>
+                            <select id="upscaleMethodSelect" class="form-control">
+                                <option value="none">None</option>
+                                <option value="esrgan">ESRGAN</option>
+                                <option value="realesrgan">RealESRGAN</option>
+                                <option value="dat">DAT</option>
+                            </select>
+                            <div class="param-group">
+                                <label>Upscale Factor: <span id="upscaleFactorValue">2</span>x</label>
+                                <input type="range" id="upscaleFactorSlider" min="1" max="4" value="2" class="slider">
+                            </div>
+                        </div>
+
+                        <button id="applyEnhancementBtn" class="btn-primary btn-large">
+                            <i class="fas fa-sparkles"></i>
+                            Apply Enhancement
+                        </button>
+                    </div>
+                </div>
+
+                <!-- GALLERY TAB -->
+                <div class="tab-content" id="gallery">
+                    <div class="gallery-container">
+                        <div class="gallery-controls">
+                            <input type="text" id="gallerySearch" placeholder="Search by prompt..." class="form-control">
+                            <select id="galleryFilter" class="form-control">
+                                <option value="">All Generations</option>
+                                <option value="txt2img">Text to Image</option>
+                                <option value="img2img">Image to Image</option>
+                                <option value="inpaint">Inpaint</option>
+                            </select>
+                            <button id="galleryRefreshBtn" class="btn-secondary">
+                                <i class="fas fa-refresh"></i>
+                                Refresh
+                            </button>
+                            <button id="galleryBatchDownloadBtn" class="btn-secondary">
+                                <i class="fas fa-download"></i>
+                                Batch Download
+                            </button>
+                        </div>
+                        <div id="galleryGrid" class="gallery-grid">
+                            <!-- Gallery items will be added here -->
+                        </div>
+                        <div class="gallery-pagination">
+                            <button id="galleryPrevBtn" class="btn-secondary">Previous</button>
+                            <span id="galleryPageInfo">Page 1</span>
+                            <button id="galleryNextBtn" class="btn-secondary">Next</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SETTINGS TAB -->
+                <div class="tab-content" id="settings">
+                    <div class="settings-container">
+                        <!-- API Keys -->
+                        <section class="settings-section">
+                            <h2>API Keys & Credentials</h2>
+                            <div class="form-section">
+                                <h3>HuggingFace Token</h3>
+                                <input type="password" id="hfTokenInput" placeholder="Your HuggingFace API token" class="form-control">
+                                <small>Get it from: <a href="https://huggingface.co/settings/tokens" target="_blank">huggingface.co/settings/tokens</a></small>
+                                <button id="saveHfTokenBtn" class="btn-secondary btn-small" style="margin-top: 5px;">Save Token</button>
+                                <span id="hfTokenStatus" class="status-text"></span>
+                            </div>
+                            <div class="form-section">
+                                <h3>Civitai API Key</h3>
+                                <input type="password" id="civitaiKeyInput" placeholder="Your Civitai API key" class="form-control">
+                                <small>Get it from: <a href="https://civitai.com/user/account" target="_blank">civitai.com/user/account</a></small>
+                                <button id="saveCivitaiKeyBtn" class="btn-secondary btn-small" style="margin-top: 5px;">Save Key</button>
+                                <span id="civitaiKeyStatus" class="status-text"></span>
+                            </div>
+                        </section>
+
+                        <!-- Model Management -->
+                        <section class="settings-section">
+                            <h2>Model Management</h2>
+                            <div class="form-section">
+                                <h3>Download Checkpoint</h3>
+                                <p class="form-hint">💡 Supports HuggingFace (diffusers), Civitai, and direct safetensor/ckpt URLs</p>
+                                <div class="input-row">
+                                    <input type="text" id="checkpointUrl" placeholder="e.g., runwayml/stable-diffusion-v1-5 or https://..." class="form-control">
+                                    <button id="downloadCheckpointBtn" class="btn-primary">
+                                        <i class="fas fa-download"></i>
+                                        Download
+                                    </button>
+                                </div>
+                                <div id="checkpointProgress" class="progress-container" style="display: none;">
+                                    <div class="progress-bar">
+                                        <div id="checkpointProgressFill" class="progress-fill"></div>
+                                    </div>
+                                    <span id="checkpointProgressText">0%</span>
+                                </div>
+                            </div>
+                            <div class="form-section">
+                                <h3>Download LoRA</h3>
+                                <div class="input-row">
+                                    <input type="text" id="loraUrl" placeholder="HuggingFace model ID or direct URL" class="form-control">
+                                    <button id="downloadLoraBtn" class="btn-primary">
+                                        <i class="fas fa-download"></i>
+                                        Download
+                                    </button>
+                                </div>
+                                <div id="loraProgress" class="progress-container" style="display: none;">
+                                    <div class="progress-bar">
+                                        <div id="loraProgressFill" class="progress-fill"></div>
+                                    </div>
+                                    <span id="loraProgressText">0%</span>
+                                </div>
+                            </div>
+                            <div class="form-section">
+                                <h3>Download VAE (Optional)</h3>
+                                <div class="input-row">
+                                    <input type="text" id="vaeUrl" placeholder="VAE model URL" class="form-control">
+                                    <button id="downloadVaeBtn" class="btn-primary">
+                                        <i class="fas fa-download"></i>
+                                        Download
+                                    </button>
+                                </div>
+                                <div id="vaeProgress" class="progress-container" style="display: none;">
+                                    <div class="progress-bar">
+                                        <div id="vaeProgressFill" class="progress-fill"></div>
+                                    </div>
+                                    <span id="vaeProgressText">0%</span>
+                                </div>
+                            </div>
+                            <div class="form-section">
+                                <h3>Downloaded Models</h3>
+                                <button id="refreshModelsBtn" class="btn-secondary btn-small">Refresh List</button>
+                                <div id="modelsList" class="models-list">
+                                    <!-- Models will be listed here -->
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Generation Settings -->
+                        <section class="settings-section">
+                            <h2>Generation Settings</h2>
+                            <div class="form-section">
+                                <label>Loop Generation: <span id="loopCountValue">1</span></label>
+                                <input type="range" id="loopCountSlider" min="1" max="10" value="1" class="slider">
+                            </div>
+                            <div class="form-section">
+                                <label>Output Directory</label>
+                                <input type="text" id="outputDirInput" value="./outputs" class="form-control">
+                            </div>
+                            <div class="form-section">
+                                <label>Filename Pattern</label>
+                                <input type="text" id="filenamePatternInput" value="gen_{timestamp}_{seed}" class="form-control">
+                                <small>Use: {timestamp}, {seed}, {model}, {task}</small>
+                            </div>
+                        </section>
+
+                        <!-- Advanced Settings -->
+                        <section class="settings-section">
+                            <h2>Advanced Settings</h2>
+                            <div class="form-section">
+                                <h3>Model Precision</h3>
+                                <label class="radio-label">
+                                    <input type="radio" name="precision" value="fp16" checked>
+                                    <span>FP16 (faster, less memory)</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="precision" value="fp32">
+                                    <span>FP32 (slower, more accurate)</span>
+                                </label>
+                            </div>
+                            <div class="form-section">
+                                <h3>Optimization</h3>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="enableCudaOptimization" checked>
+                                    <span>CUDA Optimizations</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="enableCpuOffload" checked>
+                                    <span>CPU Offload</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="enableMemoryEefficient" checked>
+                                    <span>Memory Efficient</span>
+                                </label>
+                            </div>
+                            <div class="form-section">
+                                <h3>Cache Settings</h3>
+                                <button id="clearCacheBtn" class="btn-secondary">
+                                    <i class="fas fa-trash"></i>
+                                    Clear Cache
+                                </button>
+                                <button id="clearHistoryBtn" class="btn-secondary">
+                                    <i class="fas fa-trash"></i>
+                                    Clear History
+                                </button>
+                            </div>
+                        </section>
+
+                        <!-- Server Configuration -->
+                        <section class="settings-section">
+                            <h2>Server Configuration</h2>
+                            <div class="form-section">
+                                <h3>WebSocket Server URL</h3>
+                                <input type="text" id="serverUrlInput" placeholder="e.g., wss://example.com or http://localhost:5000" class="form-control">
+                                <small>Leave empty to use current domain. Use wss:// for secure WebSocket or ws:// for local.</small>
+                                <button id="saveServerUrlBtn" class="btn-secondary btn-small" style="margin-top: 5px;">Save URL</button>
+                                <span id="serverUrlStatus" class="status-text"></span>
+                            </div>
+                        </section>
+
+                        <!-- Google Drive -->
+                        <section class="settings-section">
+                            <h2>Google Drive Integration</h2>
+                            <div class="form-section">
+                                <button id="connectGdriveBtn" class="btn-primary">
+                                    <i class="fas fa-cloud"></i>
+                                    Connect Google Drive
+                                </button>
+                                <p id="gdriveStatus" style="margin-top: 10px;">Not connected</p>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Toast Notifications -->
+        <div id="toastContainer" class="toast-container"></div>
+
+        <!-- Help Modal -->
+        <div id="helpModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <button class="modal-close">&times;</button>
+                <h2>Help & Documentation</h2>
+                <div class="help-content">
+                    <h3>Getting Started</h3>
+                    <p>1. Enter a prompt describing what you want to generate</p>
+                    <p>2. Adjust generation parameters (steps, CFG, etc.)</p>
+                    <p>3. Click "Generate" to start image generation</p>
+                    
+                    <h3>Tips & Tricks</h3>
+                    <ul>
+                        <li>Use detailed prompts for better results</li>
+                        <li>Higher steps = better quality but slower</li>
+                        <li>CFG scale 7-10 works best for most cases</li>
+                        <li>Enable LoRA for style customization</li>
+                    </ul>
+                    
+                    <h3>Keyboard Shortcuts</h3>
+                    <table class="shortcuts-table">
+                        <tr><td>Ctrl+Enter</td><td>Generate</td></tr>
+                        <tr><td>Ctrl+E</td><td>Enhance prompt</td></tr>
+                        <tr><td>Ctrl+G</td><td>Random seed</td></tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Metadata Viewer Modal -->
+        <div id="metadataModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <button class="modal-close">&times;</button>
+                <h2>Image Metadata</h2>
+                <div id="metadataContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="app.js"></script>
+    <script src="app-api-keys.js"></script>
+    <script src="canvas_editor.js"></script>
+    <script src="gallery.js"></script>
+    <script src="gdrive_sync.js"></script>
+</body>
+</html>
